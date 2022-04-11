@@ -1,0 +1,346 @@
+use crate::cursor_ext::CursorExt;
+use crate::enums::{EArrayDim, ELifetimeCondition};
+use crate::error::Error;
+use crate::flags::{EObjectFlags, EPropertyFlags};
+use crate::unreal_types::{FName, PackageIndex, ToFName};
+use crate::Asset;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use enum_dispatch::enum_dispatch;
+use std::io::Cursor;
+
+macro_rules! parse_simple_property {
+    ($prop_name:ident) => {
+        pub struct $prop_name {
+            pub generic_property: FGenericProperty,
+        }
+
+        impl $prop_name {
+            pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+                Ok($prop_name {
+                    generic_property: FGenericProperty::new(asset)?,
+                })
+            }
+        }
+
+        impl FPropertyTrait for $prop_name {
+            fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
+                self.generic_property.write(asset, cursor)?;
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! parse_simple_property_index {
+    ($prop_name:ident, $($index_name:ident),*) => {
+        pub struct $prop_name {
+            pub generic_property: FGenericProperty,
+            $(
+                pub $index_name: PackageIndex,
+            )*
+        }
+
+        impl $prop_name {
+            pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+                Ok($prop_name {
+                    generic_property: FGenericProperty::new(asset)?,
+                    $(
+                        $index_name: PackageIndex::new(asset.cursor.read_i32::<LittleEndian>()?),
+                    )*
+                })
+            }
+        }
+
+        impl FPropertyTrait for $prop_name {
+            fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
+                self.generic_property.write(asset, cursor)?;
+                $(
+                    cursor.write_i32::<LittleEndian>(self.$index_name.index)?;
+                )*
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! parse_simple_property_prop {
+    ($prop_name:ident, $($prop:ident),*) => {
+        pub struct $prop_name {
+            pub generic_property: FGenericProperty,
+            $(
+                pub $prop: Box<FProperty>,
+            )*
+        }
+
+        impl $prop_name {
+            pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+                Ok($prop_name {
+                    generic_property: FGenericProperty::new(asset)?,
+                    $(
+                        $prop: Box::new(FProperty::new(asset)?),
+                    )*
+                })
+            }
+        }
+
+        impl FPropertyTrait for $prop_name {
+            fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
+                self.generic_property.write(asset, cursor)?;
+                $(
+                    FProperty::write(self.$prop.as_ref(), asset, cursor)?;
+                )*
+                Ok(())
+            }
+        }
+    };
+}
+
+#[enum_dispatch]
+pub trait FPropertyTrait {
+    fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error>;
+}
+
+#[enum_dispatch(FPropertyTrait)]
+pub enum FProperty {
+    FGenericProperty,
+    FEnumProperty,
+    FArrayProperty,
+    FSetProperty,
+    FObjectProperty,
+    FSoftObjectProperty,
+    FClassProperty,
+    FSoftClassProperty,
+    FDelegateProperty,
+    FMulticastDelegateProperty,
+    FMulticastInlineDelegateProperty,
+    FInterfaceProperty,
+    FMapProperty,
+    FBoolProperty,
+    FByteProperty,
+    FStructProperty,
+    FNumericProperty,
+}
+
+impl FProperty {
+    pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+        let serialized_type = asset.read_fname()?;
+        let res: FProperty = match serialized_type.content.as_str() {
+            "EnumProperty" => FEnumProperty::new(asset)?.into(),
+            "ArrayProperty" => FArrayProperty::new(asset)?.into(),
+            "SetProperty" => FSetProperty::new(asset)?.into(),
+            "ObjectProperty" => FObjectProperty::new(asset)?.into(),
+            "SoftObjectProperty" => FSoftObjectProperty::new(asset)?.into(),
+            "ClassProperty" => FClassProperty::new(asset)?.into(),
+            "SoftClassProperty" => FSoftClassProperty::new(asset)?.into(),
+            "DelegateProperty" => FDelegateProperty::new(asset)?.into(),
+            "MulticastDelegateProperty" => FMulticastDelegateProperty::new(asset)?.into(),
+            "MulticastInlineDelegateProperty" => {
+                FMulticastInlineDelegateProperty::new(asset)?.into()
+            }
+            "InterfaceProperty" => FInterfaceProperty::new(asset)?.into(),
+            "MapProperty" => FMapProperty::new(asset)?.into(),
+            "BoolProperty" => FBoolProperty::new(asset)?.into(),
+            "ByteProperty" => FByteProperty::new(asset)?.into(),
+            "StructProperty" => FStructProperty::new(asset)?.into(),
+            "NumericProperty" => FNumericProperty::new(asset)?.into(),
+            _ => {
+                FGenericProperty::with_serialized_type(asset, Some(serialized_type.clone()))?.into()
+            }
+        };
+
+        Ok(res)
+    }
+
+    pub fn write(
+        property: &FProperty,
+        asset: &Asset,
+        cursor: &mut Cursor<Vec<u8>>,
+    ) -> Result<(), Error> {
+        asset.write_fname(cursor, &property.to_fname())?;
+        property.write(asset, cursor)
+    }
+}
+
+impl ToFName for FProperty {
+    fn to_fname(&self) -> FName {
+        match self {
+            FProperty::FEnumProperty(_) => FName::from_slice("EnumProperty"),
+            FProperty::FArrayProperty(_) => FName::from_slice("ArrayProperty"),
+            FProperty::FSetProperty(_) => FName::from_slice("SetProperty"),
+            FProperty::FObjectProperty(_) => FName::from_slice("ObjectProperty"),
+            FProperty::FSoftObjectProperty(_) => FName::from_slice("SoftObjectProperty"),
+            FProperty::FClassProperty(_) => FName::from_slice("ClassProperty"),
+            FProperty::FSoftClassProperty(_) => FName::from_slice("SoftClassProperty"),
+            FProperty::FDelegateProperty(_) => FName::from_slice("DelegateProperty"),
+            FProperty::FMulticastDelegateProperty(_) => {
+                FName::from_slice("MulticastDelegateProperty")
+            }
+            FProperty::FMulticastInlineDelegateProperty(_) => {
+                FName::from_slice("MulticastInlineDelegateProperty")
+            }
+            FProperty::FInterfaceProperty(_) => FName::from_slice("InterfaceProperty"),
+            FProperty::FMapProperty(_) => FName::from_slice("MapProperty"),
+            FProperty::FBoolProperty(_) => FName::from_slice("BoolProperty"),
+            FProperty::FByteProperty(_) => FName::from_slice("ByteProperty"),
+            FProperty::FStructProperty(_) => FName::from_slice("StructProperty"),
+            FProperty::FNumericProperty(_) => FName::from_slice("NumericProperty"),
+            FProperty::FGenericProperty(generic) => generic
+                .serialized_type
+                .as_ref()
+                .map(|e| e.clone())
+                .unwrap_or(FName::from_slice("Generic")),
+        }
+    }
+}
+
+pub struct FGenericProperty {
+    pub name: FName,
+    pub flags: EObjectFlags,
+    pub array_dim: EArrayDim,
+    pub element_size: i32,
+    pub property_flags: EPropertyFlags,
+    pub rep_index: u16,
+    pub rep_notify_func: FName,
+    pub blueprint_replication_condition: ELifetimeCondition,
+    pub serialized_type: Option<FName>,
+}
+
+pub struct FEnumProperty {
+    generic_property: FGenericProperty,
+    enum_value: PackageIndex,
+    underlying_prop: Box<FProperty>,
+}
+
+pub struct FBoolProperty {
+    generic_property: FGenericProperty,
+
+    field_size: u8,
+    byte_offset: u8,
+    byte_mask: u8,
+    field_mask: u8,
+    native_bool: bool,
+    value: bool,
+}
+
+impl FGenericProperty {
+    pub fn with_serialized_type(
+        asset: &mut Asset,
+        serialized_type: Option<FName>,
+    ) -> Result<Self, Error> {
+        let name = asset.read_fname()?;
+        let flags: EObjectFlags = EObjectFlags::from_bits(asset.cursor.read_u32::<LittleEndian>()?)
+            .ok_or(Error::invalid_file("Invalid object flags".to_string()))?; // todo: maybe other error type than invalid_file?
+        let array_dim: EArrayDim = asset.cursor.read_i32::<LittleEndian>()?.try_into()?;
+        let element_size = asset.cursor.read_i32::<LittleEndian>()?;
+        let property_flags: EPropertyFlags =
+            EPropertyFlags::from_bits(asset.cursor.read_u64::<LittleEndian>()?)
+                .ok_or(Error::invalid_file("Invalid property flags".to_string()))?;
+        let rep_index = asset.cursor.read_u16::<LittleEndian>()?;
+        let rep_notify_func = asset.read_fname()?;
+        let blueprint_replication_condition: ELifetimeCondition =
+            asset.cursor.read_u8()?.try_into()?;
+
+        Ok(FGenericProperty {
+            name,
+            flags,
+            array_dim,
+            element_size,
+            property_flags,
+            rep_index,
+            rep_notify_func,
+            blueprint_replication_condition,
+            serialized_type,
+        })
+    }
+
+    pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+        FGenericProperty::with_serialized_type(asset, None)
+    }
+}
+
+impl FPropertyTrait for FGenericProperty {
+    fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
+        asset.write_fname(cursor, &self.name)?;
+        cursor.write_u32::<LittleEndian>(self.flags.bits())?;
+        cursor.write_i32::<LittleEndian>(self.array_dim.into())?;
+        cursor.write_i32::<LittleEndian>(self.element_size)?;
+        cursor.write_u64::<LittleEndian>(self.property_flags.bits())?;
+        cursor.write_u16::<LittleEndian>(self.rep_index)?;
+        asset.write_fname(cursor, &self.rep_notify_func)?;
+        cursor.write_u8(self.blueprint_replication_condition.into())?;
+        Ok(())
+    }
+}
+
+impl FEnumProperty {
+    pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+        let generic_property = FGenericProperty::new(asset)?;
+        let enum_value = PackageIndex::new(asset.cursor.read_i32::<LittleEndian>()?);
+        let underlying_prop = FProperty::new(asset)?;
+
+        Ok(FEnumProperty {
+            generic_property,
+            enum_value,
+            underlying_prop: Box::new(underlying_prop),
+        })
+    }
+}
+
+impl FPropertyTrait for FEnumProperty {
+    fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
+        self.generic_property.write(asset, cursor)?;
+        cursor.write_i32::<LittleEndian>(self.enum_value.index)?;
+        FProperty::write(self.underlying_prop.as_ref(), asset, cursor)?;
+        Ok(())
+    }
+}
+
+impl FBoolProperty {
+    pub fn new(asset: &mut Asset) -> Result<Self, Error> {
+        let generic_property = FGenericProperty::new(asset)?;
+        let field_size = asset.cursor.read_u8()?;
+        let byte_offset = asset.cursor.read_u8()?;
+        let byte_mask = asset.cursor.read_u8()?;
+        let field_mask = asset.cursor.read_u8()?;
+        let native_bool = asset.cursor.read_bool()?;
+        let value = asset.cursor.read_bool()?;
+
+        Ok(FBoolProperty {
+            generic_property,
+            field_size,
+            byte_offset,
+            byte_mask,
+            field_mask,
+            native_bool,
+            value,
+        })
+    }
+}
+
+impl FPropertyTrait for FBoolProperty {
+    fn write(&self, asset: &Asset, cursor: &mut Cursor<Vec<u8>>) -> Result<(), Error> {
+        self.generic_property.write(asset, cursor)?;
+        cursor.write_u8(self.field_size)?;
+        cursor.write_u8(self.byte_offset)?;
+        cursor.write_u8(self.byte_mask)?;
+        cursor.write_u8(self.field_mask)?;
+        cursor.write_bool(self.native_bool)?;
+        cursor.write_bool(self.value)?;
+        Ok(())
+    }
+}
+
+parse_simple_property_prop!(FArrayProperty, inner);
+parse_simple_property_prop!(FSetProperty, element_prop);
+parse_simple_property_index!(FObjectProperty, property_class);
+parse_simple_property_index!(FSoftObjectProperty, property_class);
+parse_simple_property_index!(FClassProperty, property_class, meta_class);
+parse_simple_property_index!(FSoftClassProperty, property_class, meta_class);
+parse_simple_property_index!(FDelegateProperty, signature_function);
+parse_simple_property_index!(FMulticastDelegateProperty, signature_function);
+parse_simple_property_index!(FMulticastInlineDelegateProperty, signature_function);
+parse_simple_property_index!(FInterfaceProperty, interface_class);
+parse_simple_property_prop!(FMapProperty, key_prop, value_prop);
+parse_simple_property_index!(FByteProperty, enum_value);
+parse_simple_property_index!(FStructProperty, struct_value);
+parse_simple_property!(FNumericProperty);
