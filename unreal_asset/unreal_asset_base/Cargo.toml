@@ -39,3 +39,7 @@ lazy_static.workspace = true
 bitvec.workspace = true
 bitflags.workspace = true
 enum_dispatch.workspace = true
+
+[features]
+oodle = []
+threading = []
