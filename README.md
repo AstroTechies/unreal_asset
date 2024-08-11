@@ -1,6 +1,6 @@
 # unreal_asset
 
-[![Build status](https://github.com/AstroTechies/unreal_asset/workflows/CI/badge.svg)](https://github.com/AstroTechies/unrealmodding/actions?query=workflow%3ACI)
+[![Build status](https://github.com/AstroTechies/unreal_asset/workflows/CI/badge.svg)](https://github.com/AstroTechies/unreal_asset/actions?query=workflow%3ACI)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE-MIT)
 
 Unreal Engine 4/5 asset file parsing library. Initially developed for Astroneer.
