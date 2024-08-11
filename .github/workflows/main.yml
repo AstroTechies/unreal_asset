@@ -1,0 +1,50 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the workflow will run
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions-rs/cargo@v1
+        name: Unit test
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          command: test
+
+      - uses: actions-rs/cargo@v1
+        name: Unit test unreal_helpers
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          command: test
+          args: -p unreal_helpers --all-features
+
+      - uses: actions-rs/clippy-check@v1
+        name: Clippy check
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: -- -D warnings

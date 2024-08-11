@@ -1,0 +1,46 @@
+[workspace]
+resolver = "2"
+members = [
+    "unreal_asset",
+    "unreal_asset/unreal_asset_base",
+    "unreal_asset/unreal_asset_properties",
+    "unreal_asset/unreal_asset_kismet",
+    "unreal_asset/unreal_asset_exports",
+    "unreal_asset/unreal_asset_registry",
+    "unreal_asset/unreal_asset_proc_macro",
+    "unreal_helpers",
+]
+
+[workspace.package]
+version = "0.1.16"
+authors = ["AstroTechies", "localcc", "konsti219"]
+license = "MIT"
+description = "Unreal engine 4/5 asset file parsing library."
+repository = "https://github.com/AstroTechies/unreal_asset"
+
+[workspace.dependencies]
+unreal_asset = { path = "./unreal_asset", version = "0.1.16" }
+unreal_asset_base = { path = "./unreal_asset/unreal_asset_base", version = "0.1.16" }
+unreal_asset_properties = { path = "./unreal_asset/unreal_asset_properties", version = "0.1.16" }
+unreal_asset_kismet = { path = "./unreal_asset/unreal_asset_kismet", version = "0.1.16" }
+unreal_asset_exports = { path = "./unreal_asset/unreal_asset_exports", version = "0.1.16" }
+unreal_asset_registry = { path = "./unreal_asset/unreal_asset_registry", version = "0.1.16" }
+unreal_asset_proc_macro = { path = "./unreal_asset/unreal_asset_proc_macro", version = "0.1.16" }
+unreal_helpers = { path = "./unreal_helpers", version = "0.1.16" }
+
+bitflags = "2.4.0"
+bitvec = "1.0.1"
+byteorder = "1.4.3"
+enum_dispatch = "0.3.12"
+lazy_static = "1.4.0"
+num_enum = "0.6.1"
+ordered-float = "3.7.0"
+regex = "1.9.3"
+serde_json = "1.0.104"
+serde = { version = "1.0.183", features = ["derive"] }
+thiserror = "1.0.44"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
