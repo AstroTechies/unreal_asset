@@ -43,28 +43,8 @@ impl<C: Read + Seek> Read for Chain<C> {
             Some(sec) => {
                 let len_read = match self.pos >= self.first_len {
                     true => sec.read(buf)?,
-                    false => {
-                        let len = buf.len() as u64;
-                        let to_end = self.first_len - self.pos;
-                        match to_end >= len {
-                            true => self.first.read(buf)?,
-                            false => {
-                                let mut first = vec![0; to_end as usize];
-                                let excess = len - to_end;
-                                let mut second = vec![
-                                    0;
-                                    match excess > self.second_len {
-                                        true => self.second_len,
-                                        false => excess,
-                                    } as usize
-                                ];
-                                self.first.read_exact(&mut first)?;
-                                sec.read_exact(&mut second)?;
-                                first.append(&mut second);
-                                first.as_slice().read(buf)?
-                            }
-                        }
-                    }
+                    // there will never be a read across the boundary
+                    false => self.first.read(buf)?,
                 };
                 self.pos += len_read as u64;
                 Ok(len_read)

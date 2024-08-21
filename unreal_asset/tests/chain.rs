@@ -2,19 +2,6 @@ use std::io::{Read, Seek, SeekFrom};
 use unreal_asset_base::containers::Chain;
 
 #[test]
-fn read() {
-    use std::io::Cursor;
-    let mut v = Vec::with_capacity(12);
-    Chain::new(
-        Cursor::new(vec![0, 1, 2, 3, 4, 5, 6, 7]),
-        Some(Cursor::new(vec![0, 1, 2, 3])),
-    )
-    .read_to_end(&mut v)
-    .unwrap();
-    assert_eq!(v, [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3]);
-}
-
-#[test]
 fn seek() {
     use std::io::Cursor;
     let mut chain = Chain::new(
@@ -33,4 +20,19 @@ fn seek() {
     assert_eq!(read_at(SeekFrom::Current(-5)).unwrap(), 3);
     assert_eq!(read_at(SeekFrom::End(-4)).unwrap(), 4);
     assert!(read_at(SeekFrom::End(-12)).is_err());
+}
+
+#[test]
+fn read() {
+    use std::io::Cursor;
+    let mut chain = Chain::new(
+        Cursor::new(vec![0, 1, 2, 3, 4, 5, 6, 7]),
+        Some(Cursor::new(vec![0, 1, 2, 3])),
+    );
+    let mut buf = [0; 3];
+    chain.read_exact(&mut buf).unwrap();
+    assert_eq!(buf, [0, 1, 2]);
+    chain.seek(SeekFrom::Current(6)).unwrap();
+    chain.read_exact(&mut buf).unwrap();
+    assert_eq!(buf, [1, 2, 3]);
 }
