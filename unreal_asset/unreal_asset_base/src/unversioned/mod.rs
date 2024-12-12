@@ -11,7 +11,7 @@ use crate::containers::{Chain, IndexedMap, NameMap};
 use crate::custom_version::CustomVersion;
 use crate::error::{Error, UsmapError};
 use crate::object_version::{ObjectVersion, ObjectVersionUE5};
-use crate::reader::{ArchiveReader, ArchiveTrait, RawReader};
+use crate::reader::{ArchiveReader, RawReader};
 
 use crate::types::{FName, PackageIndex};
 
@@ -38,6 +38,12 @@ pub enum EUsmapVersion {
 
     /// Adds package versioning to aid with compatibililty
     PackageVersioning,
+
+    /// 16-bit wide names in name map
+    LongFName,
+
+    /// 16-bit enum entry count
+    LargeEnums,
 
     /// Latest
     Latest,
@@ -161,7 +167,7 @@ pub struct Usmap {
 }
 
 impl Usmap {
-    const ASSET_MAGIC: u16 = u16::from_be_bytes([0xc4, 0x30]);
+    const ASSET_MAGIC: u16 = 0x30c4;
 
     /// Gets usmap property for a given property name + ancestry
     pub fn get_property(
@@ -332,8 +338,15 @@ impl Usmap {
         );
 
         self.name_map = reader.read_array(|reader| {
-            let name_length = reader.read_u8()?;
-            let mut buf = vec![0u8; name_length as usize - 1];
+            let fixed_length = match usmap_version >= EUsmapVersion::LongFName {
+                true => reader.read_i16::<LE>()?,
+                false => reader.read_u8()? as i16,
+            };
+            let name_length = match fixed_length > -1 {
+                true => fixed_length as usize,
+                false => reader.read_u8()? as usize,
+            };
+            let mut buf = vec![0u8; name_length];
             reader.read_exact(&mut buf)?;
             Ok(String::from_utf8(buf)?)
         })?;
@@ -346,7 +359,10 @@ impl Usmap {
         for _ in 0..enum_len {
             let enum_name = reader.read_name()?;
 
-            let enum_names_len = reader.read_u8()?;
+            let enum_names_len = match usmap_version >= EUsmapVersion::LargeEnums {
+                true => reader.read_i16::<LE>()?,
+                false => reader.read_u8()? as i16,
+            };
             let mut enum_names = Vec::with_capacity(enum_names_len as usize);
 
             for _ in 0..enum_names_len {
@@ -364,37 +380,13 @@ impl Usmap {
             self.schemas.insert(schema.name.clone(), schema);
         }
 
-        // read extensions
-
-        if reader.data_length()? > reader.position() {
-            self.extension_version = UsmapExtensionVersion::from_bits(reader.read_u32::<LE>()?)
-                .ok_or_else(|| Error::invalid_file("Invalid extension version".to_string()))?;
-
-            if self
-                .extension_version
-                .contains(UsmapExtensionVersion::PATHS)
-            {
-                let num_module_paths = reader.read_u16::<LE>()?;
-                let module_paths = reader
-                    .read_array_with_length(num_module_paths as i32, |reader| {
-                        Ok(reader.read_fstring()?.unwrap_or_default())
-                    })?;
-
-                for (_, _, schema) in self.schemas.iter_mut() {
-                    let index = match num_module_paths > u8::MAX as u16 {
-                        true => reader.read_u16::<LE>()?,
-                        false => reader.read_u8()? as u16,
-                    };
-                    schema.module_path = Some(module_paths[index as usize].clone());
-                }
-            }
-        }
+        // we don't need to read extensions
 
         Ok(())
     }
 
     /// Create a new usmap file
-    pub fn new(cursor: Cursor<Vec<u8>>) -> Result<Self, Error> {
+    pub fn new<C: Read + Seek>(cursor: C) -> Result<Self, Error> {
         let mut usmap = Usmap {
             version: EUsmapVersion::Initial,
             name_map: Vec::new(),
