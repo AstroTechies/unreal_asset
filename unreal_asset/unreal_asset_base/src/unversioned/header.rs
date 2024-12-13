@@ -47,8 +47,8 @@ impl UnversionedHeaderFragment {
     const IS_LAST_MASK: u16 = 0x0100u16;
 
     /// Get last element index of this fragment
-    pub fn get_last_num(&self) -> u8 {
-        self.first_num + self.value_num - 1
+    pub fn get_last_num(&self) -> i8 {
+        (self.first_num + self.value_num) as i8 - 1
     }
 
     /// Read an `UnversionedHeaderFragment` from an asset
