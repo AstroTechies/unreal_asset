@@ -342,7 +342,7 @@ impl ByteProperty {
         fallback_length: i64,
         duplication_index: i32,
     ) -> Result<Self, Error> {
-        let (enum_type, property_guid) = match include_header {
+        let (enum_type, property_guid) = match include_header && !asset.has_unversioned_properties() {
             true => (Some(asset.read_fname()?), asset.read_property_guid()?),
             false => (None, None),
         };
@@ -367,7 +367,7 @@ impl PropertyTrait for ByteProperty {
         asset: &mut Writer,
         include_header: bool,
     ) -> Result<usize, Error> {
-        if include_header {
+        if include_header && !asset.has_unversioned_properties() {
             asset.write_fname(
                 self.enum_type
                     .as_ref()

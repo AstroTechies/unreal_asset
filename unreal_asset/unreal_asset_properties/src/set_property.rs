@@ -33,7 +33,7 @@ impl SetProperty {
         length: i64,
         duplication_index: i32,
     ) -> Result<Self, Error> {
-        let (array_type, property_guid) = match include_header {
+        let (array_type, property_guid) = match include_header && !asset.has_unversioned_properties() {
             true => (Some(asset.read_fname()?), asset.read_property_guid()?),
             false => (None, None),
         };
@@ -88,7 +88,7 @@ impl PropertyTrait for SetProperty {
             false => self.array_type.clone(),
         };
 
-        if include_header {
+        if include_header && !asset.has_unversioned_properties() {
             asset.write_fname(array_type.as_ref().ok_or_else(PropertyError::headerless)?)?;
             asset.write_property_guid(self.property_guid.as_ref())?;
         }

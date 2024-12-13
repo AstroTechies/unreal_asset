@@ -74,7 +74,7 @@ impl EnumProperty {
             }
         }
 
-        let property_guid = match include_header {
+        let property_guid = match include_header && !asset.has_unversioned_properties(){
             true => {
                 enum_type = Some(asset.read_fname()?);
                 asset.read_property_guid()?
@@ -145,7 +145,7 @@ impl PropertyTrait for EnumProperty {
             return Ok(size_of::<u8>());
         }
 
-        if include_header {
+        if include_header && !asset.has_unversioned_properties() {
             asset.write_fname(
                 self.enum_type
                     .as_ref()

@@ -178,7 +178,7 @@ mod property_prelude {
 #[macro_export]
 macro_rules! optional_guid {
     ($asset:ident, $include_header:ident) => {
-        match $include_header {
+        match $include_header && !$asset.has_unversioned_properties() {
             true => $asset.read_property_guid()?,
             false => None,
         }
@@ -189,7 +189,7 @@ macro_rules! optional_guid {
 #[macro_export]
 macro_rules! optional_guid_write {
     ($self:ident, $asset:ident, $include_header:ident) => {
-        if $include_header {
+        if $include_header && !$asset.has_unversioned_properties() {
             $asset.write_property_guid($self.property_guid.as_ref())?;
         }
     };

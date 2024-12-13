@@ -237,7 +237,7 @@ impl StructProperty {
         include_header: bool,
         struct_type: Option<FName>,
     ) -> Result<usize, Error> {
-        if include_header {
+        if include_header && !asset.has_unversioned_properties() {
             asset.write_fname(struct_type.as_ref().ok_or_else(PropertyError::headerless)?)?;
             if asset.get_object_version() >= ObjectVersion::VER_UE4_STRUCT_GUID_IN_PROPERTY_TAG {
                 asset.write_guid(&self.struct_guid.ok_or_else(PropertyError::headerless)?)?;
