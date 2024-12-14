@@ -58,8 +58,8 @@ impl<'reader, Reader: ArchiveReader<PackageIndex>> NameTableReader<'reader, Read
     }
 }
 
-impl<'reader, Reader: ArchiveReader<PackageIndex>> ArchiveTrait<PackageIndex>
-    for NameTableReader<'reader, Reader>
+impl<Reader: ArchiveReader<PackageIndex>> ArchiveTrait<PackageIndex>
+    for NameTableReader<'_, Reader>
 {
     #[inline(always)]
     fn get_archive_type(&self) -> ArchiveType {
@@ -134,19 +134,19 @@ impl<'reader, Reader: ArchiveReader<PackageIndex>> ArchiveTrait<PackageIndex>
     }
 }
 
-impl<'reader, Reader: ArchiveReader<PackageIndex>> ArchiveReader<PackageIndex>
-    for NameTableReader<'reader, Reader>
+impl<Reader: ArchiveReader<PackageIndex>> ArchiveReader<PackageIndex>
+    for NameTableReader<'_, Reader>
 {
     passthrough_archive_reader!(reader);
 }
 
-impl<'reader, Reader: ArchiveReader<PackageIndex>> Read for NameTableReader<'reader, Reader> {
+impl<Reader: ArchiveReader<PackageIndex>> Read for NameTableReader<'_, Reader> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.reader.read(buf)
     }
 }
 
-impl<'reader, Reader: ArchiveReader<PackageIndex>> Seek for NameTableReader<'reader, Reader> {
+impl<Reader: ArchiveReader<PackageIndex>> Seek for NameTableReader<'_, Reader> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.reader.seek(pos)
     }

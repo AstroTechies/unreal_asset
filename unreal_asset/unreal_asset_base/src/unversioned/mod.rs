@@ -177,7 +177,7 @@ impl Usmap {
     pub fn get_all_properties<'name>(
         &'name self,
         mut schema_name: &'name str,
-    ) -> Vec<&UsmapProperty> {
+    ) -> Vec<&'name UsmapProperty> {
         let mut properties = Vec::new();
 
         while let Some(schema) = self.schemas.get_by_key(schema_name) {

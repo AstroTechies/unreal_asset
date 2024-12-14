@@ -57,8 +57,8 @@ impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> RawWriter<'cursor, Inde
     }
 }
 
-impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> ArchiveTrait<Index>
-    for RawWriter<'cursor, Index, W>
+impl<Index: PackageIndexTrait, W: Write + Seek> ArchiveTrait<Index>
+    for RawWriter<'_, Index, W>
 {
     #[inline(always)]
     fn get_archive_type(&self) -> ArchiveType {
@@ -129,8 +129,8 @@ impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> ArchiveTrait<Index>
     }
 }
 
-impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> ArchiveWriter<Index>
-    for RawWriter<'cursor, Index, W>
+impl<Index: PackageIndexTrait, W: Write + Seek> ArchiveWriter<Index>
+    for RawWriter<'_, Index, W>
 {
     fn write_fstring(&mut self, value: Option<&str>) -> Result<usize, Error> {
         Ok(self.cursor.write_fstring(value)?)
@@ -145,7 +145,7 @@ impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> ArchiveWriter<Index>
     }
 }
 
-impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> Write for RawWriter<'cursor, Index, W> {
+impl<Index: PackageIndexTrait, W: Write + Seek> Write for RawWriter<'_, Index, W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.cursor.write(buf)
     }
@@ -155,7 +155,7 @@ impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> Write for RawWriter<'cu
     }
 }
 
-impl<'cursor, Index: PackageIndexTrait, W: Write + Seek> Seek for RawWriter<'cursor, Index, W> {
+impl<Index: PackageIndexTrait, W: Write + Seek> Seek for RawWriter<'_, Index, W> {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
         self.cursor.seek(pos)
     }

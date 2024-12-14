@@ -28,8 +28,8 @@ pub struct UsmapWriter<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> {
     custom_versions: &'asset [CustomVersion],
 }
 
-impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>>
-    UsmapWriter<'parent_writer, 'asset, W>
+impl<W: ArchiveWriter<PackageIndex>>
+    UsmapWriter<'_, '_, W>
 {
     /// Write a name to this archive
     pub fn write_name(&mut self, _: &str) -> Result<usize, Error> {
@@ -37,8 +37,8 @@ impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>>
     }
 }
 
-impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
-    for UsmapWriter<'parent_writer, 'asset, W>
+impl<W: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
+    for UsmapWriter<'_, '_, W>
 {
     fn get_archive_type(&self) -> ArchiveType {
         ArchiveType::Usmap
@@ -112,14 +112,14 @@ impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> ArchiveTrait<Packag
     }
 }
 
-impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> ArchiveWriter<PackageIndex>
-    for UsmapWriter<'parent_writer, 'asset, W>
+impl<W: ArchiveWriter<PackageIndex>> ArchiveWriter<PackageIndex>
+    for UsmapWriter<'_, '_, W>
 {
     passthrough_archive_writer!(parent_writer);
 }
 
-impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> Write
-    for UsmapWriter<'parent_writer, 'asset, W>
+impl<W: ArchiveWriter<PackageIndex>> Write
+    for UsmapWriter<'_, '_, W>
 {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.parent_writer.write(buf)
@@ -130,8 +130,8 @@ impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> Write
     }
 }
 
-impl<'parent_writer, 'asset, W: ArchiveWriter<PackageIndex>> Seek
-    for UsmapWriter<'parent_writer, 'asset, W>
+impl<W: ArchiveWriter<PackageIndex>> Seek
+    for UsmapWriter<'_, '_, W>
 {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         self.parent_writer.seek(pos)
