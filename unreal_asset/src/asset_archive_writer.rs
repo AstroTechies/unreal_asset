@@ -64,8 +64,8 @@ impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>>
     }
 }
 
-impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
-    for AssetArchiveWriter<'parent_writer, 'asset, ParentWriter>
+impl<ParentWriter: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
+    for AssetArchiveWriter<'_, '_, ParentWriter>
 {
     #[inline(always)]
     fn get_archive_type(&self) -> ArchiveType {
@@ -149,14 +149,14 @@ impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>> ArchiveT
     }
 }
 
-impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>> ArchiveWriter<PackageIndex>
-    for AssetArchiveWriter<'parent_writer, 'asset, ParentWriter>
+impl<ParentWriter: ArchiveWriter<PackageIndex>> ArchiveWriter<PackageIndex>
+    for AssetArchiveWriter<'_, '_, ParentWriter>
 {
     passthrough_archive_writer!(writer);
 }
 
-impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>> Write
-    for AssetArchiveWriter<'parent_writer, 'asset, ParentWriter>
+impl<ParentWriter: ArchiveWriter<PackageIndex>> Write
+    for AssetArchiveWriter<'_, '_, ParentWriter>
 {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.writer.write(buf)
@@ -167,8 +167,8 @@ impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>> Write
     }
 }
 
-impl<'parent_writer, 'asset, ParentWriter: ArchiveWriter<PackageIndex>> Seek
-    for AssetArchiveWriter<'parent_writer, 'asset, ParentWriter>
+impl<ParentWriter: ArchiveWriter<PackageIndex>> Seek
+    for AssetArchiveWriter<'_, '_, ParentWriter>
 {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         self.writer.seek(pos)

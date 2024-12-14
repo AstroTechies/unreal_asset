@@ -194,7 +194,7 @@ where
     }
 }
 
-impl<'map, K, V> DoubleEndedIterator for IndexedMapIndexIterator<'map, K, V>
+impl<K, V> DoubleEndedIterator for IndexedMapIndexIterator<'_, K, V>
 where
     K: Eq + Hash,
 {
@@ -259,7 +259,7 @@ where
     }
 }
 
-impl<'map, K, V> DoubleEndedIterator for IndexedMapIndexIteratorMut<'map, K, V>
+impl<K, V> DoubleEndedIterator for IndexedMapIndexIteratorMut<'_, K, V>
 where
     K: Eq + Hash,
 {
@@ -469,7 +469,7 @@ where
     }
 }
 
-impl<'map, K, V> DoubleEndedIterator for Values<'map, K, V>
+impl<K, V> DoubleEndedIterator for Values<'_, K, V>
 where
     K: Eq + Hash,
 {
@@ -514,7 +514,7 @@ where
     }
 }
 
-impl<'map, K, V> DoubleEndedIterator for ValuesMut<'map, K, V>
+impl<K, V> DoubleEndedIterator for ValuesMut<'_, K, V>
 where
     K: Eq + Hash,
 {
@@ -553,7 +553,7 @@ where
     }
 }
 
-impl<'map, K, V> DoubleEndedIterator for Keys<'map, K, V>
+impl<K, V> DoubleEndedIterator for Keys<'_, K, V>
 where
     K: Eq + Hash,
 {

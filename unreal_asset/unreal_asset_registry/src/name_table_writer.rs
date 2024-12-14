@@ -29,8 +29,8 @@ impl<'writer, Writer: ArchiveWriter<PackageIndex>> NameTableWriter<'writer, Writ
     }
 }
 
-impl<'writer, Writer: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
-    for NameTableWriter<'writer, Writer>
+impl<Writer: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
+    for NameTableWriter<'_, Writer>
 {
     #[inline(always)]
     fn get_archive_type(&self) -> ArchiveType {
@@ -105,13 +105,13 @@ impl<'writer, Writer: ArchiveWriter<PackageIndex>> ArchiveTrait<PackageIndex>
     }
 }
 
-impl<'writer, Writer: ArchiveWriter<PackageIndex>> ArchiveWriter<PackageIndex>
-    for NameTableWriter<'writer, Writer>
+impl<Writer: ArchiveWriter<PackageIndex>> ArchiveWriter<PackageIndex>
+    for NameTableWriter<'_, Writer>
 {
     passthrough_archive_writer!(writer);
 }
 
-impl<'writer, Writer: ArchiveWriter<PackageIndex>> Write for NameTableWriter<'writer, Writer> {
+impl<Writer: ArchiveWriter<PackageIndex>> Write for NameTableWriter<'_, Writer> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.writer.write(buf)
     }
@@ -121,7 +121,7 @@ impl<'writer, Writer: ArchiveWriter<PackageIndex>> Write for NameTableWriter<'wr
     }
 }
 
-impl<'writer, Writer: ArchiveWriter<PackageIndex>> Seek for NameTableWriter<'writer, Writer> {
+impl<Writer: ArchiveWriter<PackageIndex>> Seek for NameTableWriter<'_, Writer> {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         self.writer.seek(pos)
     }

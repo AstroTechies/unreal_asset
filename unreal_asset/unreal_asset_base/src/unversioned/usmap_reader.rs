@@ -59,8 +59,8 @@ impl<'parent_reader, 'asset, R: ArchiveReader<PackageIndex>>
     }
 }
 
-impl<'parent_reader, 'asset, R: ArchiveReader<PackageIndex>> ArchiveTrait<PackageIndex>
-    for UsmapReader<'parent_reader, 'asset, R>
+impl<R: ArchiveReader<PackageIndex>> ArchiveTrait<PackageIndex>
+    for UsmapReader<'_, '_, R>
 {
     fn get_archive_type(&self) -> ArchiveType {
         ArchiveType::Usmap
@@ -134,22 +134,22 @@ impl<'parent_reader, 'asset, R: ArchiveReader<PackageIndex>> ArchiveTrait<Packag
     }
 }
 
-impl<'parent_reader, 'asset, R: ArchiveReader<PackageIndex>> ArchiveReader<PackageIndex>
-    for UsmapReader<'parent_reader, 'asset, R>
+impl<R: ArchiveReader<PackageIndex>> ArchiveReader<PackageIndex>
+    for UsmapReader<'_, '_, R>
 {
     passthrough_archive_reader!(parent_reader);
 }
 
-impl<'parent_reader, 'asset, R: ArchiveReader<PackageIndex>> Read
-    for UsmapReader<'parent_reader, 'asset, R>
+impl<R: ArchiveReader<PackageIndex>> Read
+    for UsmapReader<'_, '_, R>
 {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         self.parent_reader.read(buf)
     }
 }
 
-impl<'parent_reader, 'asset, R: ArchiveReader<PackageIndex>> Seek
-    for UsmapReader<'parent_reader, 'asset, R>
+impl<R: ArchiveReader<PackageIndex>> Seek
+    for UsmapReader<'_, '_, R>
 {
     fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
         self.parent_reader.seek(pos)

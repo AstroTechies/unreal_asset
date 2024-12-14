@@ -310,12 +310,9 @@ impl AssetRegistryState {
             for name in name_map.get_ref().get_name_map_index_list() {
                 writer.write_fstring(Some(name))?;
 
-                match writer.get_object_version() >= ObjectVersion::VER_UE4_NAME_HASHES_SERIALIZED {
-                    true => {
-                        let hash = crc::generate_hash(name);
-                        writer.write_u32::<LE>(hash)?;
-                    }
-                    false => {}
+                if writer.get_object_version() >= ObjectVersion::VER_UE4_NAME_HASHES_SERIALIZED {
+                    let hash = crc::generate_hash(name);
+                    writer.write_u32::<LE>(hash)?;
                 }
             }
 
