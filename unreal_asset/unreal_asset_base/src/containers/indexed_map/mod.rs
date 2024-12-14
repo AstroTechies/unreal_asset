@@ -5,7 +5,10 @@ use std::collections::BTreeMap;
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::iter::FusedIterator;
+#[cfg(not(feature = "threading"))]
 use std::rc::Rc;
+#[cfg(feature = "threading")]
+use std::sync::Arc;
 
 pub mod entry;
 
@@ -14,9 +17,15 @@ use entry::{Entry, OccupiedEntry, VacantEntry};
 // todo: more docs
 
 /// Used for storing a key reference inside IndexedMap
+#[cfg(not(feature = "threading"))]
 #[derive(PartialEq, Eq, Hash)]
 pub struct KeyItem<K: Eq + Hash>(Rc<K>);
 
+#[cfg(feature = "threading")]
+#[derive(PartialEq, Eq, Hash)]
+pub struct KeyItem<K: Eq + Hash>(Arc<K>);
+
+#[cfg(not(feature = "threading"))]
 impl<K> KeyItem<K>
 where
     K: Eq + Hash,
@@ -25,13 +34,32 @@ where
         Self(Rc::clone(&self.0))
     }
 }
+#[cfg(feature = "threading")]
+impl<K> KeyItem<K>
+where
+    K: Eq + Hash,
+{
+    fn rc_clone(&self) -> Self {
+        Self(Arc::clone(&self.0))
+    }
+}
 
+#[cfg(not(feature = "threading"))]
 impl<K> Clone for KeyItem<K>
 where
     K: Clone + Eq + Hash,
 {
     fn clone(&self) -> Self {
         Self(Rc::new((*self.0).clone()))
+    }
+}
+#[cfg(feature = "threading")]
+impl<K> Clone for KeyItem<K>
+where
+    K: Clone + Eq + Hash,
+{
+    fn clone(&self) -> Self {
+        Self(Arc::new((*self.0).clone()))
     }
 }
 
@@ -283,7 +311,10 @@ where
 
         Some((
             index,
+            #[cfg(not(feature = "threading"))]
             Rc::try_unwrap(value.key_map_index.0).ok().unwrap(),
+            #[cfg(feature = "threading")]
+            Arc::try_unwrap(value.key_map_index.0).ok().unwrap(),
             value.value,
         ))
     }
@@ -299,7 +330,10 @@ where
 
         Some((
             index,
+            #[cfg(not(feature = "threading"))]
             Rc::try_unwrap(value.key_map_index.0).ok().unwrap(),
+            #[cfg(feature = "threading")]
+            Arc::try_unwrap(value.key_map_index.0).ok().unwrap(),
             value.value,
         ))
     }
@@ -568,7 +602,10 @@ where
             return &mut self.store[*storage_place];
         }
 
+        #[cfg(not(feature = "threading"))]
         let key_rc = KeyItem(Rc::new(key));
+        #[cfg(feature = "threading")]
+        let key_rc = KeyItem(Arc::new(key));
         let indexed_value = IndexedValue {
             value,
             key_map_index: key_rc.rc_clone(),
@@ -685,7 +722,10 @@ where
 
         Some((
             value.index_map_index,
+            #[cfg(not(feature = "threading"))]
             Rc::<K>::try_unwrap(value.key_map_index.0).ok()?,
+            #[cfg(feature = "threading")]
+            Arc::<K>::try_unwrap(value.key_map_index.0).ok()?,
             value.value,
         ))
     }
