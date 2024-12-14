@@ -1159,7 +1159,7 @@ impl<'a, C: Read + Seek> Asset<C> {
                 return;
             };
 
-            if *name_map != current_name_map {
+            if *name_map.get_ref() != *current_name_map.get_ref() {
                 let new_index = current_name_map
                     .get_mut()
                     .add_name_reference(content, false);
