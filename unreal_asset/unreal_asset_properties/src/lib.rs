@@ -538,7 +538,7 @@ impl Property {
                 .ok_or_else(PropertyError::no_mappings)?;
             let parent_name = ancestry.get_parent().ok_or_else(PropertyError::no_parent)?;
 
-            while header.unversioned_property_index as i8
+            while header.unversioned_property_index as i16
                 > header.fragments[header.current_fragment_index].get_last_num()
             {
                 if header.fragments[header.current_fragment_index].is_last {
@@ -1548,7 +1548,7 @@ pub fn generate_unversioned_header<W: ArchiveWriter<impl PackageIndexTrait>>(
 
             while skip_num > i8::MAX as u32 {
                 fragments.push(UnversionedHeaderFragment {
-                    skip_num: i8::MAX as u8,
+                    skip_num: i8::MAX as u16,
                     value_num: 0,
                     first_num: 0,
                     is_last: false,
@@ -1559,7 +1559,7 @@ pub fn generate_unversioned_header<W: ArchiveWriter<impl PackageIndexTrait>>(
             while value_num > i8::MAX as u32 {
                 fragments.push(UnversionedHeaderFragment {
                     skip_num: 0,
-                    value_num: i8::MAX as u8,
+                    value_num: i8::MAX as u16,
                     first_num: 0,
                     is_last: false,
                     has_zeros: false,
@@ -1569,9 +1569,9 @@ pub fn generate_unversioned_header<W: ArchiveWriter<impl PackageIndexTrait>>(
 
             // Create the main fragment for this chunk
             let fragment = UnversionedHeaderFragment {
-                skip_num: skip_num as u8,
-                value_num: value_num as u8,
-                first_num: start_index as u8,
+                skip_num: skip_num as u16,
+                value_num: value_num as u16,
+                first_num: start_index as u16,
                 is_last: false,
                 has_zeros,
             };
@@ -1581,7 +1581,7 @@ pub fn generate_unversioned_header<W: ArchiveWriter<impl PackageIndexTrait>>(
         }
     } else {
         fragments.push(parent_name.get_content(|name| UnversionedHeaderFragment {
-            skip_num: usize::min(mappings.get_all_properties(name).len(), i8::MAX as usize) as u8,
+            skip_num: usize::min(mappings.get_all_properties(name).len(), i8::MAX as usize) as u16,
             value_num: 0,
             first_num: 0,
             is_last: true,

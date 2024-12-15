@@ -12,11 +12,11 @@ use crate::Error;
 pub struct UnversionedHeaderFragment {
     // todo: maybe those are actually i8?
     /// Number of properties to skip before values
-    pub skip_num: u8,
+    pub skip_num: u16,
     /// Number of subsequent property values stured
-    pub value_num: u8,
+    pub value_num: u16,
     /// First element index of this fragment
-    pub first_num: u8,
+    pub first_num: u16,
     /// Is this the last header fragment?
     pub is_last: bool,
     /// Has zeros
@@ -25,9 +25,9 @@ pub struct UnversionedHeaderFragment {
 
 impl From<u16> for UnversionedHeaderFragment {
     fn from(value: u16) -> Self {
-        let skip_num = (value & UnversionedHeaderFragment::SKIP_NUM_MASK) as u8;
+        let skip_num = value & UnversionedHeaderFragment::SKIP_NUM_MASK;
         let has_zeros = (value & UnversionedHeaderFragment::HAS_ZEROS_MASK) != 0;
-        let value_num = (value >> UnversionedHeaderFragment::VALUE_NUM_SHIFT) as u8;
+        let value_num = value >> UnversionedHeaderFragment::VALUE_NUM_SHIFT;
         let is_last = (value & UnversionedHeaderFragment::IS_LAST_MASK) != 0;
 
         UnversionedHeaderFragment {
@@ -47,8 +47,8 @@ impl UnversionedHeaderFragment {
     const IS_LAST_MASK: u16 = 0x0100u16;
 
     /// Get last element index of this fragment
-    pub fn get_last_num(&self) -> i8 {
-        (self.first_num + self.value_num) as i8 - 1
+    pub fn get_last_num(&self) -> i16 {
+        (self.first_num + self.value_num) as i16 - 1
     }
 
     /// Read an `UnversionedHeaderFragment` from an asset
