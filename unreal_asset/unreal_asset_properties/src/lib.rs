@@ -542,7 +542,7 @@ impl Property {
                 > header.fragments[header.current_fragment_index].get_last_num()
             {
                 if header.fragments[header.current_fragment_index].is_last {
-                    return Err(PropertyError::EarlyFragEnd.into());
+                    return Ok(None);
                 }
                 header.current_fragment_index += 1;
                 header.unversioned_property_index =
