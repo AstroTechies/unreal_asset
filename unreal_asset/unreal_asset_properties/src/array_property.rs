@@ -33,10 +33,11 @@ impl ArrayProperty {
         duplication_index: i32,
         serialize_struct_differently: bool,
     ) -> Result<Self, Error> {
-        let (array_type, property_guid) = match include_header && !asset.has_unversioned_properties() {
-            true => (Some(asset.read_fname()?), asset.read_property_guid()?),
-            false => (None, None),
-        };
+        let (array_type, property_guid) =
+            match include_header && !asset.has_unversioned_properties() {
+                true => (Some(asset.read_fname()?), asset.read_property_guid()?),
+                false => (None, None),
+            };
         ArrayProperty::new_no_header(
             asset,
             name,
@@ -180,8 +181,12 @@ impl ArrayProperty {
                 entries.push(data.into());
             }
         } else if num_entries > 0 {
-            let size_est_1 = length / num_entries as i64;
-            let size_est_2 = (length - 4) / num_entries as i64;
+            let size_est_1 = (length - 4) / num_entries as i64;
+            let size_est_1 = match size_est_1 <= 0 {
+                true => 1, // missing possible edge case where leng1 = 4 and numEntries = 2, may result is wrong size
+                false => size_est_1,
+            };
+
             let array_type = array_type
                 .as_ref()
                 .ok_or_else(|| Error::invalid_file("Unknown array type".to_string()))?;
@@ -210,7 +215,7 @@ impl ArrayProperty {
                         ancestry.clone(),
                         false,
                         size_est_1,
-                        size_est_2,
+                        0,
                         0,
                         false,
                     )?
@@ -256,7 +261,7 @@ impl ArrayProperty {
 
         if array_type.as_ref().is_some_and(|ty| ty == "StructProperty")
             && serialize_structs_differently
-            && !asset.has_unversioned_properties() 
+            && !asset.has_unversioned_properties()
         {
             let property: &StructProperty = match !self.value.is_empty() {
                 true => match &self.value[0] {

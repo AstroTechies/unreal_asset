@@ -23,7 +23,7 @@ const TEST_ASSETS: [(&[u8], &[u8]); 2] = [
 
 #[test]
 fn unversioned() -> Result<(), Error> {
-    for (asset_data, bulk_data) in TEST_ASSETS.into_iter().skip(1) {
+    for (asset_data, bulk_data) in TEST_ASSETS.into_iter() {
         let mut parsed = Asset::new(
             Cursor::new(asset_data),
             Some(Cursor::new(bulk_data)),
