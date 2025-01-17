@@ -145,8 +145,7 @@ pub trait FPropertyTrait: Debug + Clone + PartialEq + Eq + Hash {
 
 /// FProperty
 #[enum_dispatch(FPropertyTrait)]
-#[derive(FNameContainer, Hash, PartialEq, Clone, Debug)]
-#[container_nobounds]
+#[derive(Hash, PartialEq, Clone, Debug)]
 pub enum FProperty {
     /// Generic FProperty
     FGenericProperty,
@@ -182,6 +181,34 @@ pub enum FProperty {
     FStructProperty,
     /// Numeric
     FNumericProperty,
+}
+
+impl unreal_asset_base::types::fname::FNameContainer for FProperty {
+    fn traverse_fnames<F: FnMut(&mut FName)>(&mut self, traverse: &mut F) {
+        // it's hacky but works for now
+        let mut name_map = unreal_asset_base::containers::NameMap::new();
+        let mut name = name_map.get_mut().add_fname(&self.to_serialized_name());
+        traverse(&mut name);
+        match self {
+            FProperty::FGenericProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FEnumProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FArrayProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FSetProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FObjectProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FSoftObjectProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FClassProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FSoftClassProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FDelegateProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FMulticastDelegateProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FMulticastInlineDelegateProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FInterfaceProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FMapProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FBoolProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FByteProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FStructProperty(prop) => prop.traverse_fnames(traverse),
+            FProperty::FNumericProperty(prop) => prop.traverse_fnames(traverse),
+        }
+    }
 }
 
 impl Eq for FProperty {}
@@ -224,12 +251,11 @@ impl FProperty {
         asset: &mut Writer,
     ) -> Result<(), Error> {
         let property_serialized_name = property.to_serialized_name();
-        asset.write_fname(
-            &asset
-                .get_name_map()
-                .get_mut()
-                .add_fname(&property_serialized_name),
-        )?;
+        let name = asset
+            .get_name_map()
+            .get_mut()
+            .add_fname(&property_serialized_name);
+        asset.write_fname(&name)?;
         property.write(asset)
     }
 }
